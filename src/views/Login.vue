@@ -32,44 +32,53 @@
 
 <script setup>
 import { ref } from 'vue';
-import axios from 'axios'; // import de la bibliotheque lel les requetes http 
+import axios from 'axios';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
 
-// objet bech najmou nsajlou les saisies de user 
 const credentials = ref({
   email: '',
   password: ''
 });
 
-// fonction lel connexion
 const handleLogin = async () => {
   try {
-    // nabaathou les donnes lel backend (post)
-    const response = await axios.post('http://localhost:3001/auth/signin', {
-  identifiant: credentials.value.email,
-  password: credentials.value.password
-});
-    // ken c bon nsajlou les infos mtaa user 
-    localStorage.setItem('user', JSON.stringify(response.data));
-    
-    // On stocke aussi le token pour les futures requêtes vers les livres
-    if (response.data.access_token) {
-      localStorage.setItem('token', response.data.access_token);
-    }
-    
-    // On redirige vers la page des livres
-    router.push('/books');
+    const response = await axios.post(
+      'http://localhost:3001/auth/signin',
+      {
+        identifiant: credentials.value.email,
+        password: credentials.value.password
+      }
+    );
+
+    const token = response.data.access_token;
+    const userData = response.data.user || response.data;
+
+    // STANDARDISATION
+    let role = userData.role;
+
+    if (role === "ROLE_ADMIN") role = "admin";
+    if (role === "ROLE_USER") role = "user";
+
+    const user = {
+      id: userData.id,
+      username: userData.username,
+      email: userData.email,
+      role
+    };
+
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem('role', role);
+
+    router.push('/'); // mieux que '/'
+
   } catch (error) {
-    // On affiche le message d'erreur qui vient du backend (ex: "Identifiant inexistant")
-    const message = error.response?.data?.message || "Identifiants incorrects";
-    alert(message);
-    console.error(error);
+    alert(error.response?.data?.message || "Identifiants incorrects");
   }
 };
 
-// fonction thezna lel page dinscription
 const goToRegister = () => {
   router.push("/register");
 };

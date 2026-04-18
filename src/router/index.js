@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+
 import Home from "../views/Home.vue";
 import Books from "../views/Books.vue";
 import AddBook from "../views/AddBook.vue";
@@ -6,44 +7,55 @@ import Login from "../views/Login.vue";
 import Register from "../views/Register.vue";
 
 const routes = [
-  // Routes publiques accecible ay aabed
-  { path: "/", name: "Home", component: Home },
+
+  // PUBLIC
+{ path: "/", name: "Home", component: Home },
   { path: "/login", name: "Login", component: Login },
   { path: "/register", name: "Register", component: Register },
 
-  // Routes protégées lezem tkoun connecte
-  { 
-    path: "/books", 
-    name: "Books", 
+  {
+    path: "/books",
+    name: "Books",
     component: Books,
-    meta: { requiresAuth: true } 
+    meta: { requiresAuth: true }
   },
-  { 
-    path: "/add", 
-    name: "AddBook", 
+
+  // ken admin 
+  {
+    path: "/add",
+    name: "AddBook",
     component: AddBook,
-    meta: { requiresAuth: true } 
-  },
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true
+    }
+  }
+
 ];
 
 const router = createRouter({
   history: createWebHistory(),
-  routes,
+  routes
 });
 
-// Navigation Guard
-router.beforeEach((to, from, next) => {
-  // njibou user eli stocké fel localstorage
-  const isConnected = localStorage.getItem('user');
 
-// ken page testhak connexion w user mouch msajel
-  if (to.matched.some(record => record.meta.requiresAuth) && !isConnected) {
-    // nrajouh lel page de Login
-    next('/login');
-  } else {
-    // Sinon, nkhaliw yetaada
-    next();
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role");
+
+  if (to.meta.requiresAuth && !token) {
+    return next("/login");
   }
+
+  if (to.meta.requiresAdmin && role !== "admin") {
+    return next("/books"); // On le redirige vers la liste autorisée
+  }
+
+  if (to.meta.requiresUser && role !== "user") {
+    return next("/books");
+  }
+
+  next(); // Dans tous les autres cas (comme la Home), on laisse passer
 });
 
 export default router;
